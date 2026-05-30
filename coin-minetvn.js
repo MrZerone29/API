@@ -111,7 +111,7 @@
         if (canClick) {
             clickedContinue = true;
             console.log("[Minet] Waiting 3s then clicking:", text);
-            await sleep(3000);
+            await sleep(2000);
 
             btn.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
             btn.dispatchEvent(new MouseEvent("mouseup",   { bubbles: true }));
@@ -167,7 +167,7 @@
             if (text.includes("Start Bypass") && visible && enabled) {
                 bypassClicked = true;
                 console.log("[Bypass] Waiting 3s then clicking Start");
-                await sleep(3000);
+                await sleep(2000);
 
                 btn.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
                 btn.dispatchEvent(new MouseEvent("mouseup",   { bubbles: true }));
