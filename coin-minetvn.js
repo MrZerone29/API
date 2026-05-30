@@ -44,10 +44,17 @@
     // ==========================
     // MỞ LINK MINET (sạch, không referrer)
     // ==========================
-    async function openMinet(url) {
+    function openMinet(url) {
         if (openedMinet) return;
         openedMinet = true;
-        console.log("[Minet] Opening:", url);
+        console.log("[Minet] Found:", url);
+
+        // Mở sạch, không có referrer
+        const a = document.createElement("a");
+        a.href = url;
+        a.rel = "noreferrer noopener";
+        a.target = "_self";
+        a.click();
     }
 
     function isMinetTarget(url) {
