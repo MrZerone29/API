@@ -12,13 +12,15 @@
     'use strict';
 
     const MINET_TARGET = "https://dashboard.minet.vn/earn/linkvertise";
+    const MINET_EARN   = "https://dashboard.minet.vn/earn";
 
     const FIXED_BYPASS =
         "https://bypass.tools/vi/bypass?url=https%3A%2F%2Flinkvertise.com%2F380094%2Fygg9q9CsHDLy%3Fo%3Dsharing";
 
-    let openedMinet = false;
-    let clickedContinue = false;
-    let bypassClicked = false;
+    let openedMinet      = false;
+    let clickedContinue  = false;
+    let bypassClicked    = false;
+    let restartScheduled = false;
 
     // ==========================
     // SLEEP
@@ -47,14 +49,8 @@
     function openMinet(url) {
         if (openedMinet) return;
         openedMinet = true;
-        console.log("[Minet] Found:", url);
-
-        // Mở sạch, không có referrer
-        const a = document.createElement("a");
-        a.href = url;
-        a.rel = "noreferrer noopener";
-        a.target = "_self";
-        a.click();
+        console.log("[Minet] Opening:", url);
+        window.open(url, "_self", "noreferrer");
     }
 
     function isMinetTarget(url) {
@@ -93,6 +89,27 @@
     }
 
     // ==========================
+    // AUTO RESTART KHI VỀ TRANG EARN
+    // ==========================
+    function watchEarnPage() {
+        setInterval(() => {
+            const url = location.href.replace(/\/$/, "");
+            if (url === MINET_EARN) {
+                if (restartScheduled) return;
+                restartScheduled = true;
+                console.log("[Minet] Về trang earn, chờ 30s rồi mở lại linkvertise...");
+                sleep(30000).then(() => {
+                    restartScheduled = false;
+                    openedMinet = false;
+                    window.open(MINET_TARGET, "_self", "noreferrer");
+                });
+            } else {
+                restartScheduled = false;
+            }
+        }, 2000);
+    }
+
+    // ==========================
     // AUTO CLICK CONTINUE
     // ==========================
     async function clickContinue() {
@@ -111,7 +128,7 @@
         if (canClick) {
             clickedContinue = true;
             console.log("[Minet] Waiting 3s then clicking:", text);
-            await sleep(2000);
+            await sleep(3000);
 
             btn.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
             btn.dispatchEvent(new MouseEvent("mouseup",   { bubbles: true }));
@@ -167,7 +184,7 @@
             if (text.includes("Start Bypass") && visible && enabled) {
                 bypassClicked = true;
                 console.log("[Bypass] Waiting 3s then clicking Start");
-                await sleep(2000);
+                await sleep(3000);
 
                 btn.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
                 btn.dispatchEvent(new MouseEvent("mouseup",   { bubbles: true }));
@@ -236,6 +253,9 @@
             scanForMinet();
         }, 500);
     }
+
+    // watchEarnPage chạy độc lập ở mọi trang
+    watchEarnPage();
 
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", init);
