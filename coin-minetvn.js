@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minet Auto Continue + Auto Bypass
 // @namespace    http://tampermonkey.net/
-// @version      2.4
+// @version      2.6
 // @description  Auto open Minet earn/linkvertise, click Continue, redirect bypass, click Start Bypass
 // @match        *://*/*
 // @grant        none
