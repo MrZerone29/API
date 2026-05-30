@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minet Auto Continue + Auto Bypass
 // @namespace    http://tampermonkey.net/
-// @version      2.6
+// @version      2.4
 // @description  Auto open Minet earn/linkvertise, click Continue, redirect bypass, click Start Bypass
 // @match        *://*/*
 // @grant        none
@@ -261,8 +261,14 @@
     function openMinet(url) {
         if (openedMinet) return;
         openedMinet = true;
-        setStatus("Mở link Minet...", { color: "#4caf50", progress: 50 });
         console.log("[Minet] Opening:", url);
+
+        // Mở sạch, không có referrer
+        const a = document.createElement("a");
+        a.href = url;
+        a.rel = "noreferrer noopener";
+        a.target = "_self";
+        a.click();
     }
 
     function isMinetTarget(url) {
