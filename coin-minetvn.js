@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Minet Auto Continue + Auto Bypass
 // @namespace    http://tampermonkey.net/
-// @version      2.1
+// @version      2.2
 // @description  Auto open Minet earn/linkvertise, click Continue, redirect bypass, click Start Bypass
 // @match        *://*/*
 // @grant        none
@@ -21,6 +21,13 @@
     let bypassClicked = false;
 
     // ==========================
+    // SLEEP
+    // ==========================
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // ==========================
     // LINKVERTISE -> BYPASS
     // ==========================
     function checkLinkvertise() {
@@ -35,19 +42,15 @@
     if (checkLinkvertise()) return;
 
     // ==========================
-    // MỞ LINK MINET (chính xác)
+    // MỞ LINK MINET (sạch, không referrer)
     // ==========================
-    function openMinet(url) {
+    async function openMinet(url) {
         if (openedMinet) return;
         openedMinet = true;
-        console.log("[Minet] Found:", url);
-
-        // Mở sạch, không có referrer
-        const a = document.createElement("a");
-        a.href = url;
-        a.rel = "noreferrer noopener";
-        a.target = "_self";
-        a.click();
+        console.log("[Minet] Found:", url, "- Waiting 3s...");
+        await sleep(3000);
+        console.log("[Minet] Opening:", url);
+        window.open(url, "_self", "noreferrer");
     }
 
     function isMinetTarget(url) {
@@ -75,7 +78,7 @@
             }
         }
 
-        // Tìm qua innerHTML (regex chính xác hơn)
+        // Tìm qua innerHTML
         const html = document.documentElement?.innerHTML || "";
         const match = html.match(
             /https:\/\/dashboard\.minet\.vn\/earn\/linkvertise[^\s"'<>]*/i
@@ -88,7 +91,7 @@
     // ==========================
     // AUTO CLICK CONTINUE
     // ==========================
-    function clickContinue() {
+    async function clickContinue() {
         if (clickedContinue) return true;
 
         const btn = document.querySelector("#nextBtn");
@@ -103,7 +106,8 @@
 
         if (canClick) {
             clickedContinue = true;
-            console.log("[Minet] Clicking:", text);
+            console.log("[Minet] Waiting 3s then clicking:", text);
+            await sleep(3000);
 
             btn.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
             btn.dispatchEvent(new MouseEvent("mouseup",   { bubbles: true }));
@@ -118,14 +122,16 @@
     }
 
     function startMinetAutomation() {
-        const fastInterval = setInterval(() => {
-            if (clickContinue()) clearInterval(fastInterval);
+        const fastInterval = setInterval(async () => {
+            if (await clickContinue()) clearInterval(fastInterval);
             checkLinkvertise();
+            scanForMinet();
         }, 200);
 
-        const minetObserver = new MutationObserver(() => {
-            clickContinue();
+        const minetObserver = new MutationObserver(async () => {
+            await clickContinue();
             checkLinkvertise();
+            scanForMinet();
         });
 
         minetObserver.observe(document.documentElement, {
@@ -135,16 +141,17 @@
             attributeFilter: ["disabled", "class", "style"]
         });
 
-        setInterval(() => {
-            clickContinue();
+        setInterval(async () => {
+            await clickContinue();
             checkLinkvertise();
+            scanForMinet();
         }, 1000);
     }
 
     // ==========================
     // AUTO CLICK START BYPASS
     // ==========================
-    function clickStartBypass() {
+    async function clickStartBypass() {
         if (bypassClicked) return true;
 
         const buttons = document.querySelectorAll("button");
@@ -155,7 +162,8 @@
 
             if (text.includes("Start Bypass") && visible && enabled) {
                 bypassClicked = true;
-                console.log("[Bypass] Clicking Start");
+                console.log("[Bypass] Waiting 3s then clicking Start");
+                await sleep(3000);
 
                 btn.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
                 btn.dispatchEvent(new MouseEvent("mouseup",   { bubbles: true }));
@@ -169,14 +177,14 @@
     }
 
     function startBypassAutomation() {
-        const fastInterval = setInterval(() => {
-            if (clickStartBypass()) clearInterval(fastInterval);
-            scanForMinet(); // ← tìm link kết quả sau khi bypass xong
+        const fastInterval = setInterval(async () => {
+            if (await clickStartBypass()) clearInterval(fastInterval);
+            scanForMinet();
         }, 200);
 
-        const bypassObserver = new MutationObserver(() => {
-            clickStartBypass();
-            scanForMinet(); // ← link hiện ra là mở luôn
+        const bypassObserver = new MutationObserver(async () => {
+            await clickStartBypass();
+            scanForMinet();
         });
 
         bypassObserver.observe(document.documentElement, {
@@ -185,9 +193,9 @@
             attributes: true
         });
 
-        setInterval(() => {
-            clickStartBypass();
-            scanForMinet(); // ← backup poll
+        setInterval(async () => {
+            await clickStartBypass();
+            scanForMinet();
         }, 1000);
     }
 
@@ -195,21 +203,19 @@
     // MAIN
     // ==========================
     function init() {
-        // bypass.tools
         if (location.hostname.includes("bypass.tools")) {
             console.log("[Bypass] Active");
             startBypassAutomation();
             return;
         }
 
-        // Đang ở đúng trang minet target
         if (location.href.startsWith(MINET_TARGET)) {
             console.log("[Minet] Active");
             startMinetAutomation();
             return;
         }
 
-        // Web khác -> tìm link minet target
+        // Web khác -> tìm link minet
         const pageObserver = new MutationObserver(() => {
             scanForMinet();
         });
@@ -221,6 +227,10 @@
         });
 
         scanForMinet();
+
+        setInterval(() => {
+            scanForMinet();
+        }, 500);
     }
 
     if (document.readyState === "loading") {
