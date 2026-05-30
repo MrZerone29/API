@@ -5,6 +5,7 @@
 // @description  Auto open Minet earn/linkvertise, click Continue, redirect bypass, click Start Bypass
 // @match        https://bypass.tools/*
 // @match        https://dashboard.minet.vn/*
+// @match        https://linkvertise.com/*
 // @grant        none
 // @run-at       document-start
 // ==/UserScript==
