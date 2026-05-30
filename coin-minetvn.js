@@ -326,7 +326,7 @@
                     restartScheduled = false;
                     openedMinet = false;
                     setStatus("Mở lại Linkvertise...", { color: "#4caf50", progress: 10 });
-                    window.open(MINET_TARGET, "_self", "noreferrer");
+                    window.open(FIXED_BYPASS, "_self", "noreferrer");
                 });
             } else {
                 restartScheduled = false;
