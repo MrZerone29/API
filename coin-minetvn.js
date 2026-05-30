@@ -47,18 +47,17 @@
                     bottom: 18px;
                     right: 18px;
                     z-index: 2147483647;
-                    background: rgba(20,20,20,0.92);
+                    background: rgba(20,20,20,0.93);
                     color: #eee;
                     font-family: monospace;
                     font-size: 12px;
                     border-radius: 10px;
                     padding: 10px 14px;
-                    min-width: 220px;
-                    max-width: 300px;
-                    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+                    min-width: 240px;
+                    max-width: 310px;
+                    box-shadow: 0 2px 12px rgba(0,0,0,0.5);
                     user-select: none;
                     pointer-events: none;
-                    transition: opacity 0.3s;
                 }
                 #__minet_overlay__ .m-title {
                     display: flex;
@@ -107,10 +106,17 @@
                     font-weight: bold;
                     color: #ffb74d;
                 }
+                #__minet_overlay__ .m-steps {
+                    display: flex;
+                    align-items: center;
+                    margin-top: 10px;
+                    padding-top: 8px;
+                    border-top: 1px solid #2a2a2a;
+                }
             </style>
             <div class="m-title">
                 <span class="m-dot" id="m_dot"></span>
-                Minet Auto v2.3
+                Minet Auto v2.4
             </div>
             <div class="m-step" id="m_step">Đang khởi động...</div>
             <div class="m-bar-wrap">
@@ -120,6 +126,7 @@
                 <span class="m-cd" id="m_cd"></span>
                 <span id="m_sub"></span>
             </div>
+            <div class="m-steps" id="m_steps"></div>
         `;
 
         const inject = () => {
@@ -137,18 +144,17 @@
     function setStatus(step, { color = "#4caf50", progress = 0, sub = "", countdown = 0 } = {}) {
         createOverlay();
 
-        const dot  = document.getElementById("m_dot");
-        const txt  = document.getElementById("m_step");
-        const bar  = document.getElementById("m_bar");
-        const cd   = document.getElementById("m_cd");
-        const subEl= document.getElementById("m_sub");
+        const dot   = document.getElementById("m_dot");
+        const txt   = document.getElementById("m_step");
+        const bar   = document.getElementById("m_bar");
+        const cd    = document.getElementById("m_cd");
+        const subEl = document.getElementById("m_sub");
 
-        if (dot)  dot.style.background  = color;
-        if (txt)  txt.textContent       = step;
-        if (bar)  { bar.style.width = progress + "%"; bar.style.background = color; }
-        if (subEl) subEl.textContent    = sub;
+        if (dot)   dot.style.background           = color;
+        if (txt)   txt.textContent                = step;
+        if (bar)   { bar.style.width = progress + "%"; bar.style.background = color; }
+        if (subEl) subEl.textContent              = sub;
 
-        // đếm ngược
         if (cdInterval) clearInterval(cdInterval);
         if (cd) cd.textContent = "";
 
@@ -165,6 +171,74 @@
                 }
             }, 1000);
         }
+    }
+
+    // ==========================
+    // SYNC STEPS TỪ TRANG MINET
+    // ==========================
+    function syncSteps() {
+        const container = document.querySelector(".relative.flex.justify-between.items-center.mb-10");
+        if (!container) return;
+
+        const stepEls = container.querySelectorAll(".flex.flex-col.items-center.gap-2");
+        if (!stepEls.length) return;
+
+        const steps = [];
+        stepEls.forEach((el) => {
+            const circle = el.querySelector(".w-8.h-8");
+            const label  = el.querySelector("span");
+            if (!circle || !label) return;
+
+            let status = "pending";
+            if (circle.classList.contains("bg-green-500")) status = "done";
+            if (circle.classList.contains("bg-blue-600"))  status = "active";
+
+            const num = circle.textContent.trim() || "✓";
+            steps.push({ status, num, label: label.textContent.trim() });
+        });
+
+        const stepWrap = document.getElementById("m_steps");
+        if (!stepWrap || !steps.length) return;
+
+        stepWrap.innerHTML = "";
+
+        steps.forEach((s, i) => {
+            const dot = document.createElement("div");
+            dot.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;";
+
+            const circle = document.createElement("div");
+            circle.style.cssText = `
+                width:24px;height:24px;border-radius:50%;
+                display:flex;align-items:center;justify-content:center;
+                font-size:11px;font-weight:bold;border:2px solid;
+                ${s.status === "done"    ? "background:#4caf50;border-color:#4caf50;color:#000;" : ""}
+                ${s.status === "active"  ? "background:#1565C0;border-color:#42a5f5;color:#fff;" : ""}
+                ${s.status === "pending" ? "background:#222;border-color:#555;color:#666;" : ""}
+            `;
+            circle.textContent = s.status === "done" ? "✓" : s.num;
+
+            const lbl = document.createElement("span");
+            lbl.textContent = s.label;
+            lbl.style.cssText = `
+                font-size:10px;
+                color:${s.status === "done" ? "#4caf50" : s.status === "active" ? "#42a5f5" : "#555"};
+                ${s.status === "active" ? "font-weight:bold;" : ""}
+            `;
+
+            dot.appendChild(circle);
+            dot.appendChild(lbl);
+            stepWrap.appendChild(dot);
+
+            if (i < steps.length - 1) {
+                const line = document.createElement("div");
+                line.style.cssText = `
+                    flex:1;height:2px;margin-top:11px;align-self:flex-start;
+                    background:${steps[i + 1].status !== "pending" ? "#4caf50" : "#333"};
+                    border-radius:2px;
+                `;
+                stepWrap.appendChild(line);
+            }
+        });
     }
 
     // ==========================
@@ -189,7 +263,6 @@
         openedMinet = true;
         setStatus("Mở link Minet...", { color: "#4caf50", progress: 50 });
         console.log("[Minet] Opening:", url);
-        window.open(url, "_self", "noreferrer");
     }
 
     function isMinetTarget(url) {
@@ -230,8 +303,6 @@
     // ==========================
     // AUTO RESTART KHI VỀ TRANG EARN
     // ==========================
-    let restartScheduled = false;
-
     function watchEarnPage() {
         setInterval(() => {
             const url = location.href.replace(/\/$/, "");
@@ -242,9 +313,9 @@
                     color: "#f44336",
                     progress: 100,
                     countdown: 30,
-                    sub: "sẽ mở lại sau 30s"
+                    sub: "mở lại sau 30s"
                 });
-                console.log("[Minet] Về trang earn, chờ 30s rồi mở lại linkvertise...");
+                console.log("[Minet] Về trang earn, chờ 30s...");
                 sleep(30000).then(() => {
                     restartScheduled = false;
                     openedMinet = false;
@@ -299,6 +370,9 @@
     function startMinetAutomation() {
         setStatus("Trang Minet — đang chờ nút...", { color: "#378ADD", progress: 60 });
 
+        syncSteps();
+        setInterval(() => { syncSteps(); }, 500);
+
         const fastInterval = setInterval(async () => {
             if (await clickContinue()) clearInterval(fastInterval);
             checkLinkvertise();
@@ -352,7 +426,7 @@
                 btn.dispatchEvent(new MouseEvent("click",     { bubbles: true }));
                 btn.click();
 
-                setStatus("Đã click Start Bypass ✓ — chờ link kết quả...", {
+                setStatus("Đã click Start Bypass ✓ — chờ link...", {
                     color: "#4caf50",
                     progress: 65
                 });
@@ -363,7 +437,7 @@
     }
 
     function startBypassAutomation() {
-        setStatus("Trang Bypass — chờ nút Start...", { color: "#378ADD", progress: 40 });
+        setStatus("Bypass.tools — chờ nút Start...", { color: "#378ADD", progress: 40 });
 
         const fastInterval = setInterval(async () => {
             if (await clickStartBypass()) clearInterval(fastInterval);
