@@ -48,7 +48,6 @@
         if (openedMinet) return;
         openedMinet = true;
         console.log("[Minet] Found:", url, "- Waiting 3s...");
-        await sleep(3000);
         console.log("[Minet] Opening:", url);
         window.open(url, "_self", "noreferrer");
     }
